@@ -6,14 +6,13 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.guild.GuildCreateEvent;
-import discord4j.core.event.domain.guild.GuildEvent;
-import discord4j.core.event.domain.lifecycle.ConnectEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
+import discord4j.core.event.domain.message.ReactionRemoveEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.GuildEmoji;
+import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.reaction.ReactionEmoji;
-import discord4j.discordjson.json.gateway.GuildCreate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -29,7 +28,7 @@ import java.util.stream.Collectors;
 
 public class Bot {
 
-    public static Map<Snowflake, List<GuildEmoji>> guildEmojis;
+    public static Map<Snowflake, Map<Snowflake, GuildEmoji>> guildEmojis;
     private static Map<Snowflake, Integer> counters;
 
     private final GatewayDiscordClient client;
@@ -57,6 +56,13 @@ public class Bot {
                 .next()
                 .subscribe();
         this.client.getEventDispatcher()
+                .on(ReactionRemoveEvent.class)
+                .flatMap(event -> Flux.fromIterable(Main.signUpMap.entrySet())
+                        .filter(entry -> entry.getKey().equals(event.getMessageId().asString()))
+                        .flatMap(entry -> signUpUnReact(entry.getValue(), event)))
+                .next()
+                .subscribe();
+        this.client.getEventDispatcher()
                 .on(GuildCreateEvent.class)
                 .flatMap(event -> Mono.just(event.getGuild()))
                 .flatMap(Guild::getEmojis)
@@ -68,10 +74,10 @@ public class Bot {
                         guildEmojis = new HashMap<>();
                     }
                     if (!guildEmojis.containsKey(emoji.getGuildId())) {
-                        guildEmojis.put(emoji.getGuildId(), new ArrayList<>());
+                        guildEmojis.put(emoji.getGuildId(), new HashMap<>());
                     }
                     counters.put(emoji.getGuildId(), 0);
-                    guildEmojis.get(emoji.getGuildId()).add(emoji);
+                    guildEmojis.get(emoji.getGuildId()).put(emoji.getId(), emoji);
                     Logger logger = LoggerFactory.getLogger("test");
                     logger.debug(emoji.getName());
                 })
@@ -84,6 +90,12 @@ public class Bot {
                                 .flatMap(entry -> entry.getValue().execute(event))
                                 .next()))
                 .subscribe();
+        this.client.getEventDispatcher()
+                .on(MessageCreateEvent.class)
+                .flatMap(event -> event.getMessage().getChannel().filter(channel -> channel.getType() == Channel.Type.DM)
+                        .flatMap(channel -> whisperGW2Name(event))
+                )
+                .subscribe();
 
         return this;
     }
@@ -93,20 +105,50 @@ public class Bot {
         return this;
     }
 
+    public static GuildEmoji getEmoteById(Snowflake guildId, Snowflake emoteId){
+        return guildEmojis.get(guildId).get(emoteId);
+    }
+
     public static GuildEmoji getRandomEmote(Snowflake guildId) {
         counters.put(guildId, (counters.get(guildId) + 1) % guildEmojis.get(guildId).size());
-        return guildEmojis.get(guildId).get(counters.get(guildId));
+        return guildEmojis.get(guildId).values().parallelStream().collect(Collectors.toList()).get(counters.get(guildId));
     }
 
     private Mono<Void> signUpReact(SignUp signUp, ReactionAddEvent event) {
         return event.getMessage()
                 .doOnSuccess(x -> signUp.roles.values().parallelStream()
-                    .filter(value -> ReactionEmoji.custom(value.emoji).equals(event.getEmoji()))
-                    .forEach(val -> val.addPlayer(new Player(event.getUserId().asString(), ""))))
+                    .filter(value -> ReactionEmoji.custom(Snowflake.of(value.emojiId), value.emojiName, false).equals(event.getEmoji()))
+                    .forEach(val -> {
+                        if (Main.playerMap.containsKey(event.getUserId().asString())){
+                            val.addPlayer(Main.playerMap.get(event.getUserId().asString()));
+                        } else {
+                            val.addPlayer(new Player(event.getUserId().asString(), ""));
+                        }
+                    }))
                 .flatMap(msg -> msg.edit(messageEditSpec -> {
                     messageEditSpec.setContent(signUp.getAsMessage());
                 })).then();
-
     }
 
+    private Mono<Void> signUpUnReact(SignUp signUp, ReactionRemoveEvent event){
+        return event.getMessage()
+                .doOnSuccess(x -> signUp.roles.values().parallelStream()
+                .filter(value -> ReactionEmoji.custom(Snowflake.of(value.emojiId), value.emojiName, false).equals(event.getEmoji()))
+                .forEach(val -> val.removePlayer(event.getUserId().asString())))
+                .flatMap(msg -> msg.edit(messageEditSpec -> {
+                    messageEditSpec.setContent(signUp.getAsMessage());
+                })).then();
+    }
+
+    private Mono<Void> whisperGW2Name(MessageCreateEvent event){
+        return Mono.just(event.getMessage().getContent())
+                .filter(content -> content.matches("^[A-z]+\\.\\d{4}$"))
+                .doOnSuccess(msg -> event.getMessage().getAuthor().ifPresent(author -> {
+                    Main.addPlayer(new Player(
+                                    author.getId().asString(),
+                                    event.getMessage().getContent()
+                            )
+                    );
+                })).then();
+    }
 }

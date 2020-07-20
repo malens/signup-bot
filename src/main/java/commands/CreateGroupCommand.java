@@ -26,8 +26,8 @@ import java.util.stream.Collectors;
 public class CreateGroupCommand implements Command {
     @Parameter(names = "-role", converter = RoleConverter.class)
     private List<RaidRole> roles;
-    @Parameter(names = "-msg")
-    private String message;
+    @Parameter()
+    private List<String> message;
 
     private SignUp signUp;
 
@@ -43,14 +43,14 @@ public class CreateGroupCommand implements Command {
                 .addObject(this)
                 .build()
                 .parse(messageContent.split(" "));
-        this.signUp = new SignUp(event.getMessage().getId());
+        this.signUp = new SignUp(event.getMessage().getId(), String.join(" ", message));
         this.roles.parallelStream().forEach(role -> this.signUp.roles.put(role.name, role));
         Logger logger = LoggerFactory.getLogger("test");
         logger.debug("xD");
         return event.getGuild().doOnSuccess(guild -> {
             this.signUp.roles.values().forEach(role -> {
                 role.setEmote(Bot.getRandomEmote(guild.getId()));
-                logger.debug(role.emoji.getName());
+                logger.debug(role.emojiName);
             });
             logger.debug("xD");
         }).then(
@@ -61,8 +61,8 @@ public class CreateGroupCommand implements Command {
                                                this.signUp.discordMessageId = success.getId();
                                                this.signUp.roles.values().parallelStream().forEach(role -> {
                                                    logger.debug("sending reaction");
-                                                   logger.debug(role.emoji.getName());
-                                                   success.addReaction(ReactionEmoji.custom(role.emoji)).subscribe();
+                                                   logger.debug(role.emojiName);
+                                                   success.addReaction(ReactionEmoji.custom(Snowflake.of(role.emojiId), role.emojiName, false)).subscribe();
                                                });
                                            }))
                 .then(event.getMessage().addReaction(ReactionEmoji.unicode(SECRETS.EMOTE_SUCCESS)))
