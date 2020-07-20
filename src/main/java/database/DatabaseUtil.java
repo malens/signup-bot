@@ -30,44 +30,53 @@ public class DatabaseUtil {
     }
 
     private static void createTable(String url){
-        String sql1 = "CREATE TABLE IF NOT EXISTS signups (\n" +
-                "signup_id INT PRIMARY KEY NOT NULL, \n" +
-                "message text\n" +
-                ");";
-        String sql2 = "CREATE TABLE IF NOT EXISTS players (\n" +
-                "discordId varchar(50) PRIMARY KEY NOT NULL, \n" +
-                "guildwarsname text\n" +
-                ");";
-        String sql3 = "CREATE TABLE IF NOT EXISTS roles (\n" +
-                "role_id INT PRIMARY KEY, \n" +
-                "name text NOT NULL, \n" +
-                "signup_id INT NOT NULL, " +
-                "FOREIGN KEY (signup_id) REFERENCES signups (signup_id)\n" +
-                "ON DELETE CASCADE\n" +
-                "ON UPDATE CASCADE\n" +
-                ");";
+        String sql1 = "create table if not exists players\n" +
+                "(\n" +
+                "    discordId     varchar(50) not null\n" +
+                "        primary key,\n" +
+                "    guildwarsname text\n" +
+                ");\n" +
+                "\n" +
+                "create table if not exists signups\n" +
+                "(\n" +
+                "    signup_id INT not null\n" +
+                "        primary key,\n" +
+                "    message   text\n" +
+                ");\n" +
+                "\n" +
+                "create table if not exists roles\n" +
+                "(\n" +
+                "    role_id   INTEGER\n" +
+                "        primary key autoincrement,\n" +
+                "    name      text not null,\n" +
+                "    signup_id INT  not null\n" +
+                "        references signups\n" +
+                "            on update cascade on delete cascade,\n" +
+                "    amount    int,\n" +
+                "    emojiName text,\n" +
+                "    emojiId   text\n" +
+                ");\n" +
+                "\n" +
+                "create table if not exists player_roles\n" +
+                "(\n" +
+                "    role_id        varchar(50) not null\n" +
+                "        references roles,\n" +
+                "    player_role_id INTEGER     not null\n" +
+                "        constraint player_roles_pk\n" +
+                "            primary key autoincrement,\n" +
+                "    player_id      varchar(50) not null\n" +
+                "        references players\n" +
+                ");\n" +
+                "\n" +
+                "create unique index if not exists player_roles_player_role_id_uindex\n" +
+                "    on player_roles (player_role_id);\n" +
+                "\n";
 
         try (
                 Connection conn = DriverManager.getConnection(url);
                 Statement statement = conn.createStatement()
         ){
             statement.execute(sql1);
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-        try (
-                Connection conn = DriverManager.getConnection(url);
-                Statement statement = conn.createStatement()
-        ){
-            statement.execute(sql2);
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-        try (
-                Connection conn = DriverManager.getConnection(url);
-                Statement statement = conn.createStatement()
-        ){
-            statement.execute(sql3);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
@@ -121,7 +130,7 @@ public class DatabaseUtil {
                 }
             });
             int[] updates = statement.executeBatch();
-            String insertedsql = "SELECT * FROM roles WHERE name IN (?) AND signup_id = \'" + signUp.discordMessageId.asString() + "\'";
+            String insertedsql = "SELECT * FROM roles WHERE name IN (?) AND signup_id = '" + signUp.discordMessageId.asString() + "'";
             logger.debug(insertedsql);
             insertedsql = any(insertedsql, names.size());
             logger.debug(insertedsql);
@@ -147,20 +156,18 @@ public class DatabaseUtil {
                 PreparedStatement statement = conn.prepareStatement(sqlPlayerSignups)
         ){
             AtomicReference<Boolean> execute = new AtomicReference<>(false);
-            signUp.roles.values().forEach(role ->{
-                role.signups.values().forEach(playerSignup -> {
-                    try {
-                        execute.set(true);
-                        logger.debug(playerSignup.discordName);
-                        logger.debug(String.valueOf(insertedRolesIds.get(role.name)));
-                        statement.setInt(1, insertedRolesIds.get(role.name));
-                        statement.setString(2, playerSignup.discordName);
-                        statement.addBatch();
-                    } catch (SQLException throwables) {
-                        throwables.printStackTrace();
-                    }
-                });
-            });
+            signUp.roles.values().forEach(role -> role.signups.values().forEach(playerSignup -> {
+                try {
+                    execute.set(true);
+                    logger.debug(playerSignup.discordName);
+                    logger.debug(String.valueOf(insertedRolesIds.get(role.name)));
+                    statement.setInt(1, insertedRolesIds.get(role.name));
+                    statement.setString(2, playerSignup.discordName);
+                    statement.addBatch();
+                } catch (SQLException throwables) {
+                    throwables.printStackTrace();
+                }
+            }));
             if (execute.get()){
                 statement.executeUpdate();
             }
