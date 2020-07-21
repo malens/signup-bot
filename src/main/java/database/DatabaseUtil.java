@@ -5,6 +5,7 @@ import discord4j.core.object.entity.GuildEmoji;
 import main.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import server.ServerConfig;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -83,7 +84,7 @@ public class DatabaseUtil {
     }
 
     public static void storePlayer(Player player){
-        String sql = "INSERT INTO players(discordId, guildwarsname) VALUES(?,?)";
+        String sql = "INSERT OR REPLACE INTO players(discordId, guildwarsname) VALUES(?,?)";
         try (
                 Connection conn = DriverManager.getConnection(url);
                 PreparedStatement statement = conn.prepareStatement(sql)
@@ -99,13 +100,14 @@ public class DatabaseUtil {
     public static void storeSignup(SignUp signUp){
         Logger logger = LoggerFactory.getLogger("signup db");
         Map<String, Integer> insertedRolesIds = new HashMap<>();
-        String sql = "INSERT INTO signups(signup_id, message) VALUES(?,?)";
+        String sql = "INSERT INTO signups(signup_id, message, exclusive) VALUES(?,?, ?)";
         try (
                 Connection conn = DriverManager.getConnection(url);
                 PreparedStatement statement = conn.prepareStatement(sql)
         ){
             statement.setString(1, signUp.discordMessageId.asString());
             statement.setString(2, signUp.message);
+            statement.setInt(3, signUp.isExclusive() ? 1 : 0);
             statement.executeUpdate();
         } catch (SQLException throwables) {
             throwables.printStackTrace();
@@ -197,7 +199,7 @@ public class DatabaseUtil {
 
 
     public static Map<String, SignUp> getSignUps(){
-        String sql = "SELECT discordId, r.role_id, s.signup_id, s.message, r.amount, r.emojiName, r.name, pr.player_id, pr.role_id, r.emojiId\n" +
+        String sql = "SELECT exclusive, discordId, r.role_id, s.signup_id, s.message, r.amount, r.emojiName, r.name, pr.player_id, pr.role_id, r.emojiId\n" +
                 "FROM signups s\n" +
                 "    INNER JOIN roles r on s.signup_id = r.signup_id\n" +
                 "    LEFT OUTER JOIN player_roles pr on r.role_id = pr.role_id\n" +
@@ -215,7 +217,7 @@ public class DatabaseUtil {
                 String roleName = rs.getString("name");
                 String signUpId = rs.getString("signup_id");
                 if (!signUps.containsKey(signUpId)){
-                    signUp = new SignUp(Snowflake.of(signUpId), rs.getString("message"));
+                    signUp = new SignUp(Snowflake.of(signUpId), rs.getString("message"), rs.getBoolean("exclusive"));
                     signUps.put(signUp.discordMessageId.asString(), signUp);
                 }
                 signUp = signUps.get(signUpId);
@@ -226,9 +228,12 @@ public class DatabaseUtil {
                     role.dbId = rs.getInt("role_id");
                     signUp.roles.put(roleName, role);
                 }
-                String playerId = rs.getString("discordId");
-                if(playerId != null && !signUp.roles.get(roleName).signups.containsKey(playerId)){
-                    signUp.roles.get(roleName).signups.put(playerId, (Main.playerMap.get(playerId)));
+                String discordId = rs.getString("discordId");
+                String playerId = rs.getString("player_id");
+                if(discordId != null && !signUp.roles.get(roleName).signups.containsKey(discordId)){
+                    signUp.roles.get(roleName).signups.put(discordId, (Main.playerMap.get(discordId)));
+                } else if (playerId != null){
+                    signUp.roles.get(roleName).signups.put(playerId, new Player(playerId, ""));
                 }
                 logger.debug(signUp.getAsMessage());
             }
@@ -275,6 +280,9 @@ public class DatabaseUtil {
     }
 
     public static void deleteSignup(Player player, RaidRole role){
+        if (player == null || role == null){
+            return;
+        }
         String sqlPlayerDelete = "DELETE FROM player_roles WHERE player_id = (?) AND role_id = (?)";
         try (
                 Connection conn = DriverManager.getConnection(url);
@@ -286,6 +294,30 @@ public class DatabaseUtil {
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
+    }
+
+    public static Map<String, ServerConfig> getServers(){
+        String sql = "SELECT channel_id, server_id\n" +
+                "FROM server_channel\n" +
+                "LEFT OUTER JOIN server_configs sc on server_channel.server_id = sc.discordId";
+        Map<String, ServerConfig> servers = new HashMap<>();
+        try (
+                Connection conn = DriverManager.getConnection(url);
+                PreparedStatement statement = conn.prepareStatement(sql)
+        ){
+            ResultSet rs = statement.executeQuery();
+            while (rs.next()){
+                String serverId = rs.getString("server_id");
+                String channelId = rs.getString("channel_id");
+                if (!servers.containsKey(serverId)){
+                    servers.put(serverId, new ServerConfig(serverId));
+                }
+                servers.get(serverId).allowedChannelNames.add(channelId);
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return servers;
     }
 
 

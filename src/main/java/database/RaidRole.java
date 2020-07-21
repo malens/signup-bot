@@ -41,4 +41,8 @@ public class RaidRole {
         DatabaseUtil.deleteSignup(this.signups.get(id), this);
         this.signups.remove(id);
     }
+
+    public Boolean hasPlayer(String id){
+        return this.signups.containsKey(id);
+    }
 }

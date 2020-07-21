@@ -8,10 +8,8 @@ import database.SignUp;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.GuildEmoji;
-import discord4j.core.object.entity.Message;
 import discord4j.core.object.reaction.ReactionEmoji;
 import main.Bot;
-import main.Command;
 import main.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,13 +19,16 @@ import secret.SECRETS;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CreateGroupCommand implements Command {
-    @Parameter(names = "-role", converter = RoleConverter.class)
+    @Parameter(names = "-role", converter = RoleConverter.class, description = "List of roles to use in signup - format is \"role name\"_number or rolename_number")
     private List<RaidRole> roles;
-    @Parameter()
+    @Parameter(description = "message to display at the top of the signup")
     private List<String> message;
+    @Parameter(names = "-excl", description = "Sets the group to exclusive mode")
+    private Boolean exclusive = false;
 
     private SignUp signUp;
 
@@ -37,22 +38,31 @@ public class CreateGroupCommand implements Command {
 
     @Override
     public Mono<Void> execute(MessageCreateEvent event) {
+        this.message = new ArrayList<>();
         this.roles = new ArrayList<>();
         String messageContent = event.getMessage().getContent().split(" ", 2)[1];
+        Pattern p = Pattern.compile("(\"[^\"]*\")|[^ ]+");
+        Matcher matcher = p.matcher(messageContent);
+        Logger logger = LoggerFactory.getLogger("test");
+        List<String> matches = new ArrayList<>();
+        while (matcher.find()){
+            String match = matcher.group(0).replaceAll("\"", "");
+            logger.debug(match);
+            matches.add(match);
+        }
+        String[]arrMatches = new String[matches.size()];
         JCommander.newBuilder()
                 .addObject(this)
                 .build()
-                .parse(messageContent.split(" "));
-        this.signUp = new SignUp(event.getMessage().getId(), String.join(" ", message));
+                .parse(matches.toArray(arrMatches));
+        this.signUp = new SignUp(event.getMessage().getId(), message == null ? "" :String.join(" ",message), exclusive == null ? true : exclusive);
         this.roles.parallelStream().forEach(role -> this.signUp.roles.put(role.name, role));
-        Logger logger = LoggerFactory.getLogger("test");
-        logger.debug("xD");
+
         return event.getGuild().doOnSuccess(guild -> {
             this.signUp.roles.values().forEach(role -> {
                 role.setEmote(Bot.getRandomEmote(guild.getId()));
                 logger.debug(role.emojiName);
             });
-            logger.debug("xD");
         }).then(
             event.getMessage()
                 .getChannel()
@@ -60,8 +70,6 @@ public class CreateGroupCommand implements Command {
                                            .doOnSuccess(success -> {
                                                this.signUp.discordMessageId = success.getId();
                                                this.signUp.roles.values().parallelStream().forEach(role -> {
-                                                   logger.debug("sending reaction");
-                                                   logger.debug(role.emojiName);
                                                    success.addReaction(ReactionEmoji.custom(Snowflake.of(role.emojiId), role.emojiName, false)).subscribe();
                                                });
                                            }))

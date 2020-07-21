@@ -13,15 +13,20 @@ public class SignUp {
     public Map<String, RaidRole> roles;
     public Snowflake discordMessageId;
     public String message;
+    private Logger logger = LoggerFactory.getLogger("signup");
+    private Boolean exclusive;
 
     public SignUp(Snowflake discordMessageId, String message) {
         this.discordMessageId = discordMessageId;
         this.roles = new HashMap<>();
         this.message = message;
     }
+    public SignUp(Snowflake discordMessageId, String message, Boolean exclusive) {
+        this(discordMessageId, message);
+        this.exclusive = exclusive;
+    }
 
     public String getAsMessage() {
-        Logger logger = LoggerFactory.getLogger("mylog");
         StringBuilder toReturn = new StringBuilder();
         toReturn.append(this.message).append("\n");
         toReturn.append(SECRETS.DIVIDER);
@@ -47,5 +52,15 @@ public class SignUp {
         toReturn.append("To sign up as a role react with corresponding emote.");
         logger.debug(toReturn.toString());
         return toReturn.toString();
+    }
+
+    public Boolean notContains(String userId){
+        long count = this.roles.values().parallelStream().filter(role -> role.hasPlayer(userId)).count();
+        logger.debug(String.valueOf(count));
+        return count == 0;
+    }
+
+    public Boolean isExclusive(){
+        return this.exclusive == true;
     }
 }

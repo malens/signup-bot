@@ -1,5 +1,6 @@
 package main;
 
+import commands.Command;
 import database.Player;
 import database.SignUp;
 import discord4j.common.util.Snowflake;
@@ -19,10 +20,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import secret.SECRETS;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -84,6 +82,10 @@ public class Bot {
                 .subscribe();
         this.client.getEventDispatcher()
                 .on(MessageCreateEvent.class)
+                .filter(event -> event.getGuildId().isPresent() &&
+                                Main.serverMap.containsKey(event.getGuildId().get().asString()) &&
+                                Main.serverMap.get(event.getGuildId().get().asString())
+                                        .allowedChannelNames.contains(event.getMessage().getChannelId().asString()))
                 .flatMap(event -> Mono.just(event.getMessage().getContent())
                         .flatMap(content -> Flux.fromIterable(commandMap.entrySet())
                                 .filter(entry -> content.startsWith(SECRETS.COMMAND_CHAR + entry.getKey()))
@@ -116,7 +118,8 @@ public class Bot {
 
     private Mono<Void> signUpReact(SignUp signUp, ReactionAddEvent event) {
         return event.getMessage()
-                .doOnSuccess(x -> signUp.roles.values().parallelStream()
+                .filter(message -> !signUp.isExclusive() || signUp.notContains(event.getUserId().asString()))
+                .flatMap(x -> {signUp.roles.values().parallelStream()
                     .filter(value -> ReactionEmoji.custom(Snowflake.of(value.emojiId), value.emojiName, false).equals(event.getEmoji()))
                     .forEach(val -> {
                         if (Main.playerMap.containsKey(event.getUserId().asString())){
@@ -124,7 +127,9 @@ public class Bot {
                         } else {
                             val.addPlayer(new Player(event.getUserId().asString(), ""));
                         }
-                    }))
+                    });
+                    return Mono.just(x);
+                })
                 .flatMap(msg -> msg.edit(messageEditSpec -> {
                     messageEditSpec.setContent(signUp.getAsMessage());
                 })).then();
@@ -143,12 +148,13 @@ public class Bot {
     private Mono<Void> whisperGW2Name(MessageCreateEvent event){
         return Mono.just(event.getMessage().getContent())
                 .filter(content -> content.matches("^[A-z]+\\.\\d{4}$"))
-                .doOnSuccess(msg -> event.getMessage().getAuthor().ifPresent(author -> {
-                    Main.addPlayer(new Player(
-                                    author.getId().asString(),
-                                    event.getMessage().getContent()
-                            )
-                    );
-                })).then();
+                .flatMap(msg ->
+                    Mono.justOrEmpty(event.getMessage().getAuthor()).doOnSuccess(author ->
+                            Main.addPlayer(new Player(
+                                            author.getId().asString(),
+                                            event.getMessage().getContent()
+                                    )
+                            ))
+                    ).then();
     }
 }

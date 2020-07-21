@@ -1,4 +1,4 @@
-package main;
+package commands;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import reactor.core.publisher.Mono;
