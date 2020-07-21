@@ -1,5 +1,6 @@
 package main;
 
+import com.beust.jcommander.JCommander;
 import commands.CreateGroupCommand;
 import commands.HelpCommand;
 import database.DatabaseUtil;
@@ -16,11 +17,17 @@ public class Main {
     public static Map<String, ServerConfig> serverMap;
 
     public static void main(String[] args) {
+        Args argss = new Args();
+        JCommander.newBuilder()
+                .addObject(argss)
+                .build()
+                .parse(args);
+
         DatabaseUtil.connectToDatabase("gw2botdb");
         playerMap = DatabaseUtil.getPlayers();
         signUpMap = DatabaseUtil.getSignUps();
         serverMap = DatabaseUtil.getServers();
-        Bot bot = new Bot()
+        Bot bot = new Bot(argss.apikey)
                 .withCommand(
                         new HelpCommand(),
                         "help"

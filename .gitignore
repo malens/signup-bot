@@ -6,7 +6,6 @@
 /dataSources.local.xml
 # Editor-based HTTP Client requests
 /httpRequests/
-/src/main/java/secret/
 /target/
 /.idea
 /gw2botdb

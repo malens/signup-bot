@@ -23,7 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CreateGroupCommand implements Command {
-    @Parameter(names = "-role", converter = RoleConverter.class, description = "List of roles to use in signup - format is \"role name\"_number or rolename_number")
+    @Parameter(names = "-role", converter = RoleConverter.class, description = "List of roles to use in signup - format is \"role name_number\" or rolename_number")
     private List<RaidRole> roles;
     @Parameter(description = "message to display at the top of the signup")
     private List<String> message;

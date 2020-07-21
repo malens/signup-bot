@@ -32,8 +32,8 @@ public class Bot {
     private final GatewayDiscordClient client;
     private final Map<String, Command> commandMap = new HashMap<>();
 
-    public Bot() {
-        this.client = DiscordClientBuilder.create(SECRETS.BOT_TOKEN)
+    public Bot(String token) {
+        this.client = DiscordClientBuilder.create(token)
                 .build()
                 .login()
                 .block();
