@@ -7,7 +7,9 @@ import secret.SECRETS;
 
 import java.util.*;
 import java.util.concurrent.atomic.DoubleAccumulator;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SignUp {
     public Map<String, RaidRole> roles;
@@ -18,12 +20,19 @@ public class SignUp {
 
     public SignUp(Snowflake discordMessageId, String message) {
         this.discordMessageId = discordMessageId;
-        this.roles = new HashMap<>();
+        this.roles = new LinkedHashMap<>();
         this.message = message;
     }
     public SignUp(Snowflake discordMessageId, String message, Boolean exclusive) {
         this(discordMessageId, message);
         this.exclusive = exclusive;
+    }
+
+    public static <T> Collector<T, ?, Stream<T>> reverse() {
+        return Collectors.collectingAndThen(Collectors.toList(), list -> {
+            Collections.reverse(list);
+            return list.stream();
+        });
     }
 
     public String getAsMessage() {
@@ -36,17 +45,16 @@ public class SignUp {
         toReturn.append("Distinct peepos signed up: ").append(distinctPlayers.size()).append("/").append(total).append("\n");
         for (RaidRole role : roles.values()) {
             StringBuilder tmp = new StringBuilder();
+            String regular = role.signups.values().stream().limit(role.amount)
+                    .map(player -> "<@" + player.discordName + "> " + player.gw2Name).collect(Collectors.joining("\n"));
+            String backups = role.signups.values().stream().skip(role.amount)
+                    .map(player -> "<@" + player.discordName + "> " + player.gw2Name).collect(Collectors.joining("\n"));
             tmp.append(role.name).append(" ").append(role.signups.size()).append("/")
                     .append(role.amount).append("<:")
                     .append(role.emojiName).append(":")
                     .append(role.emojiId)
-                    .append(">").append("\n").append(
-                    role.signups.values().parallelStream().limit(role.amount)
-                            .map(player -> "<@" + player.discordName + "> " + player.gw2Name).collect(Collectors.joining("\n")))
-                    .append("\nBackups:\n").append(
-                    role.signups.values().parallelStream().skip(role.amount)
-                            .map(player -> "<@" + player.discordName + "> " + player.gw2Name).collect(Collectors.joining("\n"))
-            );
+                    .append(">").append("\n").append(regular)
+                    .append("\nBackups:\n").append(backups);
             toReturn.append(tmp).append("\n").append(SECRETS.DIVIDER);
         }
         toReturn.append("To sign up as a role react with corresponding emote.");

@@ -4,6 +4,7 @@ import discord4j.core.object.entity.GuildEmoji;
 
 import javax.xml.crypto.Data;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class RaidRole {
@@ -17,7 +18,7 @@ public class RaidRole {
     public RaidRole(String s, Integer am){
         this.name = s;
         this.amount = am;
-        this.signups = new HashMap<>();
+        this.signups = new LinkedHashMap<>();
     }
 
     public RaidRole(String s){

@@ -30,7 +30,7 @@ public class Bot {
     private static Map<Snowflake, Integer> counters;
 
     private final GatewayDiscordClient client;
-    private final Map<String, Command> commandMap = new HashMap<>();
+    private final Map<String, Command> commandMap = new LinkedHashMap<>();
 
     public Bot(String token) {
         this.client = DiscordClientBuilder.create(token)
@@ -66,13 +66,13 @@ public class Bot {
                 .flatMap(Guild::getEmojis)
                 .doOnNext(emoji -> {
                     if (counters == null) {
-                        counters = new HashMap<>();
+                        counters = new LinkedHashMap<>();
                     }
                     if (guildEmojis == null) {
-                        guildEmojis = new HashMap<>();
+                        guildEmojis = new LinkedHashMap<>();
                     }
                     if (!guildEmojis.containsKey(emoji.getGuildId())) {
-                        guildEmojis.put(emoji.getGuildId(), new HashMap<>());
+                        guildEmojis.put(emoji.getGuildId(), new LinkedHashMap<>());
                     }
                     counters.put(emoji.getGuildId(), 0);
                     guildEmojis.get(emoji.getGuildId()).put(emoji.getId(), emoji);

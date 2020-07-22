@@ -8,10 +8,7 @@ import org.slf4j.LoggerFactory;
 import server.ServerConfig;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class DatabaseUtil {
@@ -99,7 +96,7 @@ public class DatabaseUtil {
 
     public static void storeSignup(SignUp signUp){
         Logger logger = LoggerFactory.getLogger("signup db");
-        Map<String, Integer> insertedRolesIds = new HashMap<>();
+        Map<String, Integer> insertedRolesIds = new LinkedHashMap<>();
         String sql = "INSERT INTO signups(signup_id, message, exclusive) VALUES(?,?, ?)";
         try (
                 Connection conn = DriverManager.getConnection(url);
@@ -204,7 +201,7 @@ public class DatabaseUtil {
                 "    INNER JOIN roles r on s.signup_id = r.signup_id\n" +
                 "    LEFT OUTER JOIN player_roles pr on r.role_id = pr.role_id\n" +
                 "    LEFT OUTER JOIN players p on p.discordId = pr.player_id";
-        Map<String, SignUp> signUps = new HashMap<>();
+        Map<String, SignUp> signUps = new LinkedHashMap<>();
         try (
                 Connection conn = DriverManager.getConnection(url);
                 PreparedStatement statement = conn.prepareStatement(sql)
@@ -245,7 +242,7 @@ public class DatabaseUtil {
 
     public static Map<String, Player> getPlayers(){
         String sql = "SELECT discordId, guildwarsname FROM players";
-        Map<String, Player> players = new HashMap<>();
+        Map<String, Player> players = new LinkedHashMap<>();
         try (
                 Connection conn = DriverManager.getConnection(url);
                 PreparedStatement statement = conn.prepareStatement(sql)
@@ -300,7 +297,7 @@ public class DatabaseUtil {
         String sql = "SELECT channel_id, server_id\n" +
                 "FROM server_channel\n" +
                 "LEFT OUTER JOIN server_configs sc on server_channel.server_id = sc.discordId";
-        Map<String, ServerConfig> servers = new HashMap<>();
+        Map<String, ServerConfig> servers = new LinkedHashMap<>();
         try (
                 Connection conn = DriverManager.getConnection(url);
                 PreparedStatement statement = conn.prepareStatement(sql)
