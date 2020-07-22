@@ -51,6 +51,5 @@ jobs:
         username: ${{ secrets.USERNAME }}
         password: ${{ secrets.PASSWORD }}
         port: 22
-        script: |
-          java -jar /home/code/tarim*.jar
+        script: java -jar /home/code/tarim*.jar > debug &
     
