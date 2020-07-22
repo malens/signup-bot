@@ -46,10 +46,12 @@ jobs:
         
     - name: replace bot
       uses: appleboy/ssh-action@master
+      env: 
+        APIKEY: ${{ secrets.APIKEY }}
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
         password: ${{ secrets.PASSWORD }}
         port: 22
-        script: java -jar /home/code/target/tarim*.jar -apikey ${{ secrets.APIKEY }} > debug &
+        script: java -jar /home/code/target/tarim*.jar -apikey "$APIKEY" > debug &
     
