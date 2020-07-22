@@ -33,7 +33,7 @@ jobs:
         port: 22
         script: |
           pkill java
-          rm /home/code/*.jar
+          rm /home/code/target/*.jar
     - name: copy file via ssh password
       uses: appleboy/scp-action@master
       with:
