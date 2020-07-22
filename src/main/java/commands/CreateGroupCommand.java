@@ -40,23 +40,32 @@ public class CreateGroupCommand implements Command {
     public Mono<Void> execute(MessageCreateEvent event) {
         this.message = new ArrayList<>();
         this.roles = new ArrayList<>();
-        String messageContent = event.getMessage().getContent().split(" ", 2)[1];
-        Pattern p = Pattern.compile("(\"[^\"]*\")|[^ ]+");
-        Matcher matcher = p.matcher(messageContent);
         Logger logger = LoggerFactory.getLogger("test");
-        List<String> matches = new ArrayList<>();
-        while (matcher.find()){
-            String match = matcher.group(0).replaceAll("\"", "");
-            logger.debug(match);
-            matches.add(match);
+        try {
+            String messageContent = event.getMessage().getContent().split(" ", 2)[1];
+            Pattern p = Pattern.compile("(\"[^\"]*\")|[^ ]+");
+            Matcher matcher = p.matcher(messageContent);
+            List<String> matches = new ArrayList<>();
+            while (matcher.find()){
+                String match = matcher.group(0).replaceAll("\"", "");
+                logger.debug(match);
+                matches.add(match);
+            }
+            String[]arrMatches = new String[matches.size()];
+            JCommander.newBuilder()
+                    .addObject(this)
+                    .build()
+                    .parse(matches.toArray(arrMatches));
+            this.signUp = new SignUp(event.getMessage().getId(), message == null ? "" :String.join(" ",message), exclusive == null ? true : exclusive);
+            if (this.roles.isEmpty()){
+                this.roles.add(new RaidRole("All", 10));
+            }
+            this.roles.parallelStream().forEach(role -> this.signUp.roles.put(role.name, role));
+        } catch (Exception e){
+            return event.getMessage().addReaction(ReactionEmoji.unicode(SECRETS.EMOTE_ERROR));
         }
-        String[]arrMatches = new String[matches.size()];
-        JCommander.newBuilder()
-                .addObject(this)
-                .build()
-                .parse(matches.toArray(arrMatches));
-        this.signUp = new SignUp(event.getMessage().getId(), message == null ? "" :String.join(" ",message), exclusive == null ? true : exclusive);
-        this.roles.parallelStream().forEach(role -> this.signUp.roles.put(role.name, role));
+
+
 
         return event.getGuild().doOnSuccess(guild -> {
             this.signUp.roles.values().forEach(role -> {
