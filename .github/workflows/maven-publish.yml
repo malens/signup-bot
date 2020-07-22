@@ -53,5 +53,5 @@ jobs:
         username: ${{ secrets.USERNAME }}
         password: ${{ secrets.PASSWORD }}
         port: 22
-        script: java -jar /home/code/target/tarim*.jar -apikey "$APIKEY" > debug &
+        script: java -jar /home/code/target/tarim*.jar -apikey apikey > debug &
     
