@@ -12,6 +12,7 @@ import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.event.domain.message.ReactionRemoveEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.GuildEmoji;
+import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.reaction.ReactionEmoji;
 import org.slf4j.Logger;
@@ -48,6 +49,7 @@ public class Bot {
     public Bot subscribe() {
         this.client.getEventDispatcher()
                 .on(ReactionAddEvent.class)
+                .filter(event -> event.getUserId() != this.client.getSelfId())
                 .flatMap(event -> Flux.fromIterable(StateStorage.signUpMap.entrySet())
                         .filter(entry -> entry.getKey().equals(event.getMessageId().asString()))
                         .flatMap(entry -> signUpReact(entry.getValue(), event)))
@@ -55,6 +57,7 @@ public class Bot {
                 .subscribe();
         this.client.getEventDispatcher()
                 .on(ReactionRemoveEvent.class)
+                .filter(event -> event.getUserId() != this.client.getSelfId())
                 .flatMap(event -> Flux.fromIterable(StateStorage.signUpMap.entrySet())
                         .filter(entry -> entry.getKey().equals(event.getMessageId().asString()))
                         .flatMap(entry -> signUpUnReact(entry.getValue(), event)))
@@ -131,7 +134,7 @@ public class Bot {
                     return Mono.just(x);
                 })
                 .flatMap(msg -> msg.edit(messageEditSpec -> {
-                    messageEditSpec.setContent(signUp.getAsMessage());
+                    messageEditSpec.setEmbed(embed -> signUp.getAsEmbed());
                 })).then();
     }
 
@@ -141,7 +144,7 @@ public class Bot {
                 .filter(value -> ReactionEmoji.custom(Snowflake.of(value.emojiId), value.emojiName, false).equals(event.getEmoji()))
                 .forEach(val -> val.removePlayer(event.getUserId().asString())))
                 .flatMap(msg -> msg.edit(messageEditSpec -> {
-                    messageEditSpec.setContent(signUp.getAsMessage());
+                    messageEditSpec.setEmbed(embed -> signUp.getAsEmbed());
                 })).then();
     }
 

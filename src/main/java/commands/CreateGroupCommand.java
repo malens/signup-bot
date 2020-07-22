@@ -75,7 +75,7 @@ public class CreateGroupCommand implements Command {
         }).then(
             event.getMessage()
                 .getChannel()
-                .flatMap(channel -> channel.createMessage(this.signUp.getAsMessage())
+                .flatMap(channel -> channel.createMessage(this.signUp.getAsMessage())//msg.setEmbed(embed -> this.signUp.getAsEmbed()))
                                            .doOnSuccess(success -> {
                                                this.signUp.discordMessageId = success.getId();
                                                this.signUp.roles.values().parallelStream().forEach(role -> {

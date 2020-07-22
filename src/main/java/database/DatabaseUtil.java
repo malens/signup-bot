@@ -231,7 +231,6 @@ public class DatabaseUtil {
                 } else if (playerId != null){
                     signUp.roles.get(roleName).signups.put(playerId, new Player(playerId, ""));
                 }
-                logger.debug(signUp.getAsMessage());
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();

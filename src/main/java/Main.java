@@ -9,6 +9,7 @@ import main.StateStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.plaf.nimbus.State;
 import java.io.*;
 
 
@@ -39,6 +40,7 @@ public class Main {
         StateStorage.playerMap = DatabaseUtil.getPlayers();
         StateStorage.signUpMap = DatabaseUtil.getSignUps();
         StateStorage.serverMap = DatabaseUtil.getServers();
+
         Bot bot = new Bot(Main.apikey)
                 .withCommand(
                         new HelpCommand(),
