@@ -10,6 +10,21 @@
     <groupId>org.example</groupId>
     <artifactId>tarimbot</artifactId>
     <version>1.0</version>
+   <build>
+       <plugins>
+           <plugin>
+               <groupId>org.apache.maven.plugins</groupId>
+               <artifactId>maven-jar-plugin</artifactId>
+               <configuration>
+                   <archive>
+                       <manifest>
+                           <mainClass>Main</mainClass>
+                       </manifest>
+                   </archive>
+               </configuration>
+           </plugin>
+       </plugins>
+   </build>
     <dependencies>
         <dependency>
             <groupId>com.discord4j</groupId>

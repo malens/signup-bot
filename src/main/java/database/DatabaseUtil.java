@@ -1,8 +1,7 @@
 package database;
 
 import discord4j.common.util.Snowflake;
-import discord4j.core.object.entity.GuildEmoji;
-import main.Main;
+import main.StateStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import server.ServerConfig;
@@ -228,7 +227,7 @@ public class DatabaseUtil {
                 String discordId = rs.getString("discordId");
                 String playerId = rs.getString("player_id");
                 if(discordId != null && !signUp.roles.get(roleName).signups.containsKey(discordId)){
-                    signUp.roles.get(roleName).signups.put(discordId, (Main.playerMap.get(discordId)));
+                    signUp.roles.get(roleName).signups.put(discordId, (StateStorage.playerMap.get(discordId)));
                 } else if (playerId != null){
                     signUp.roles.get(roleName).signups.put(playerId, new Player(playerId, ""));
                 }

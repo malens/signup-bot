@@ -48,14 +48,14 @@ public class Bot {
     public Bot subscribe() {
         this.client.getEventDispatcher()
                 .on(ReactionAddEvent.class)
-                .flatMap(event -> Flux.fromIterable(Main.signUpMap.entrySet())
+                .flatMap(event -> Flux.fromIterable(StateStorage.signUpMap.entrySet())
                         .filter(entry -> entry.getKey().equals(event.getMessageId().asString()))
                         .flatMap(entry -> signUpReact(entry.getValue(), event)))
                 .next()
                 .subscribe();
         this.client.getEventDispatcher()
                 .on(ReactionRemoveEvent.class)
-                .flatMap(event -> Flux.fromIterable(Main.signUpMap.entrySet())
+                .flatMap(event -> Flux.fromIterable(StateStorage.signUpMap.entrySet())
                         .filter(entry -> entry.getKey().equals(event.getMessageId().asString()))
                         .flatMap(entry -> signUpUnReact(entry.getValue(), event)))
                 .next()
@@ -83,8 +83,8 @@ public class Bot {
         this.client.getEventDispatcher()
                 .on(MessageCreateEvent.class)
                 .filter(event -> event.getGuildId().isPresent() &&
-                                Main.serverMap.containsKey(event.getGuildId().get().asString()) &&
-                                Main.serverMap.get(event.getGuildId().get().asString())
+                                StateStorage.serverMap.containsKey(event.getGuildId().get().asString()) &&
+                                StateStorage.serverMap.get(event.getGuildId().get().asString())
                                         .allowedChannelNames.contains(event.getMessage().getChannelId().asString()))
                 .flatMap(event -> Mono.just(event.getMessage().getContent())
                         .flatMap(content -> Flux.fromIterable(commandMap.entrySet())
@@ -122,8 +122,8 @@ public class Bot {
                 .flatMap(x -> {signUp.roles.values().parallelStream()
                     .filter(value -> ReactionEmoji.custom(Snowflake.of(value.emojiId), value.emojiName, false).equals(event.getEmoji()))
                     .forEach(val -> {
-                        if (Main.playerMap.containsKey(event.getUserId().asString())){
-                            val.addPlayer(Main.playerMap.get(event.getUserId().asString()));
+                        if (StateStorage.playerMap.containsKey(event.getUserId().asString())){
+                            val.addPlayer(StateStorage.playerMap.get(event.getUserId().asString()));
                         } else {
                             val.addPlayer(new Player(event.getUserId().asString(), ""));
                         }
@@ -150,7 +150,7 @@ public class Bot {
                 .filter(content -> content.matches("^[A-z]+\\.\\d{4}$"))
                 .flatMap(msg ->
                     Mono.justOrEmpty(event.getMessage().getAuthor()).doOnSuccess(author ->
-                            Main.addPlayer(new Player(
+                            StateStorage.addPlayer(new Player(
                                             author.getId().asString(),
                                             event.getMessage().getContent()
                                     )

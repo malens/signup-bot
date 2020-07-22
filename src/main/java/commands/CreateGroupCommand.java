@@ -10,7 +10,7 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.GuildEmoji;
 import discord4j.core.object.reaction.ReactionEmoji;
 import main.Bot;
-import main.Main;
+import main.StateStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -83,7 +83,7 @@ public class CreateGroupCommand implements Command {
                                                });
                                            }))
                 .then(event.getMessage().addReaction(ReactionEmoji.unicode(SECRETS.EMOTE_SUCCESS)))
-                .doOnSuccess(success -> Main.storeSignUp(this.signUp))
+                .doOnSuccess(success -> StateStorage.storeSignUp(this.signUp))
                 .onErrorResume(error -> event.getMessage().addReaction(ReactionEmoji.unicode(SECRETS.EMOTE_ERROR)))
         ).then();
 

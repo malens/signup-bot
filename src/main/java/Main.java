@@ -1,20 +1,13 @@
-package main;
-
 import com.beust.jcommander.JCommander;
 import commands.CreateGroupCommand;
 import commands.HelpCommand;
 import database.DatabaseUtil;
-import database.Player;
-import database.SignUp;
-import server.ServerConfig;
+import main.Args;
+import main.Bot;
+import main.StateStorage;
 
-import java.util.Map;
 
 public class Main {
-
-    public static Map<String, SignUp> signUpMap;
-    public static Map<String, Player> playerMap;
-    public static Map<String, ServerConfig> serverMap;
 
     public static void main(String[] args) {
         Args argss = new Args();
@@ -24,9 +17,9 @@ public class Main {
                 .parse(args);
 
         DatabaseUtil.connectToDatabase("gw2botdb");
-        playerMap = DatabaseUtil.getPlayers();
-        signUpMap = DatabaseUtil.getSignUps();
-        serverMap = DatabaseUtil.getServers();
+        StateStorage.playerMap = DatabaseUtil.getPlayers();
+        StateStorage.signUpMap = DatabaseUtil.getSignUps();
+        StateStorage.serverMap = DatabaseUtil.getServers();
         Bot bot = new Bot(argss.apikey)
                 .withCommand(
                         new HelpCommand(),
@@ -40,14 +33,6 @@ public class Main {
                 .build();
     }
 
-    public static void storeSignUp(SignUp signUp){
-        signUpMap.put(signUp.discordMessageId.asString(), signUp);
-        DatabaseUtil.storeSignup(signUp);
-    }
 
-    public static void addPlayer(Player player){
-        playerMap.put(player.discordName, player);
-        DatabaseUtil.storePlayer(player);
-    }
 
 }

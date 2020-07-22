@@ -1,10 +1,8 @@
 package commands;
 
 import com.beust.jcommander.JCommander;
-import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.reaction.ReactionEmoji;
-import main.Main;
 import reactor.core.publisher.Mono;
 import secret.SECRETS;
 
