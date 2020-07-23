@@ -15,12 +15,14 @@ import discord4j.core.object.entity.GuildEmoji;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.reaction.ReactionEmoji;
+import discord4j.core.spec.EmbedCreateSpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import secret.SECRETS;
 
+import javax.swing.plaf.nimbus.State;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -134,7 +136,7 @@ public class Bot {
                     return Mono.just(x);
                 })
                 .flatMap(msg -> msg.edit(messageEditSpec -> {
-                    messageEditSpec.setEmbed(embed -> signUp.getAsEmbed());
+                    messageEditSpec.setEmbed(signUp::getAsEmbed);
                 })).then();
     }
 
@@ -144,7 +146,7 @@ public class Bot {
                 .filter(value -> ReactionEmoji.custom(Snowflake.of(value.emojiId), value.emojiName, false).equals(event.getEmoji()))
                 .forEach(val -> val.removePlayer(event.getUserId().asString())))
                 .flatMap(msg -> msg.edit(messageEditSpec -> {
-                    messageEditSpec.setEmbed(embed -> signUp.getAsEmbed());
+                    messageEditSpec.setEmbed(signUp::getAsEmbed);
                 })).then();
     }
 

@@ -19,10 +19,8 @@ import secret.SECRETS;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-public class CreateGroupCommand implements Command {
+public class CreateGroupCommand extends BaseCommand implements Command {
     @Parameter(names = "-role", converter = RoleConverter.class, description = "List of roles to use in signup - format is \"role name_number\" or rolename_number")
     private List<RaidRole> roles;
     @Parameter(description = "message to display at the top of the signup")
@@ -40,52 +38,39 @@ public class CreateGroupCommand implements Command {
     public Mono<Void> execute(MessageCreateEvent event) {
         this.message = new ArrayList<>();
         this.roles = new ArrayList<>();
-        Logger logger = LoggerFactory.getLogger("test");
         try {
-            String messageContent = event.getMessage().getContent().split(" ", 2)[1];
-            Pattern p = Pattern.compile("(\"[^\"]*\")|[^ ]+");
-            Matcher matcher = p.matcher(messageContent);
-            List<String> matches = new ArrayList<>();
-            while (matcher.find()){
-                String match = matcher.group(0).replaceAll("\"", "");
-                logger.debug(match);
-                matches.add(match);
-            }
-            String[]arrMatches = new String[matches.size()];
-            JCommander.newBuilder()
-                    .addObject(this)
-                    .build()
-                    .parse(matches.toArray(arrMatches));
-            this.signUp = new SignUp(event.getMessage().getId(), message == null ? "" :String.join(" ",message), exclusive == null ? true : exclusive);
-            if (this.roles.isEmpty()){
+            this.parseArguments(this, event);
+            this.signUp = new SignUp(event.getMessage().getId(), message == null ? "" : String.join(" ", message), exclusive == null ? true : exclusive);
+            if (this.roles.isEmpty()) {
                 this.roles.add(new RaidRole("All", 10));
             }
-            this.roles.parallelStream().forEach(role -> this.signUp.roles.put(role.name, role));
-        } catch (Exception e){
+            this.roles.forEach(role -> this.signUp.roles.put(role.name, role));
+        } catch (Exception e) {
             return event.getMessage().addReaction(ReactionEmoji.unicode(SECRETS.EMOTE_ERROR));
         }
 
+        event.getGuildId().ifPresent(guildId -> this.signUp.roles.values().forEach(role -> {
+            role.setEmote(Bot.getRandomEmote(guildId));
+            logger.debug(role.emojiName);
+        }));
 
-
-        return event.getGuild().doOnSuccess(guild -> {
-            this.signUp.roles.values().forEach(role -> {
-                role.setEmote(Bot.getRandomEmote(guild.getId()));
-                logger.debug(role.emojiName);
-            });
-        }).then(
-            event.getMessage()
+        return event.getMessage()
                 .getChannel()
-                .flatMap(channel -> channel.createMessage(this.signUp.getAsMessage())//msg.setEmbed(embed -> this.signUp.getAsEmbed()))
-                                           .doOnSuccess(success -> {
-                                               this.signUp.discordMessageId = success.getId();
-                                               this.signUp.roles.values().parallelStream().forEach(role -> {
-                                                   success.addReaction(ReactionEmoji.custom(Snowflake.of(role.emojiId), role.emojiName, false)).subscribe();
-                                               });
-                                           }))
+                .flatMap(channel ->
+                        channel.createEmbed(this.signUp::getAsEmbed)
+                                .doOnSuccess(
+                                        success -> {
+                                            this.signUp.discordMessageId = success.getId();
+                                            this.signUp.roles.values().forEach(
+                                                    role -> success
+                                                            .addReaction(ReactionEmoji.custom(Snowflake.of(role.emojiId), role.emojiName, false))
+                                                            .then());
+                                        }
+                                ))
                 .then(event.getMessage().addReaction(ReactionEmoji.unicode(SECRETS.EMOTE_SUCCESS)))
                 .doOnSuccess(success -> StateStorage.storeSignUp(this.signUp))
                 .onErrorResume(error -> event.getMessage().addReaction(ReactionEmoji.unicode(SECRETS.EMOTE_ERROR)))
-        ).then();
+                .then();
 
 
     }

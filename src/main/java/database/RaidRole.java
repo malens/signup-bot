@@ -32,6 +32,10 @@ public class RaidRole {
         return this;
     }
 
+    public String getEmote(){
+        return "<:" + emojiName + ":" + emojiId + ">";
+    }
+
     public RaidRole addPlayer(Player player){
         this.signups.put(player.discordName, player);
         DatabaseUtil.addSignup(player, this);
