@@ -2,11 +2,15 @@ package commands;
 
 import com.beust.jcommander.JCommander;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.reaction.ReactionEmoji;
 import reactor.core.publisher.Mono;
-import secret.SECRETS;
 
-public class HelpCommand implements Command {
+
+public class HelpCommand extends BaseCommand implements Command {
+
+    @Override
+    public Command newInstance() {
+        return new HelpCommand();
+    }
 
     @Override
     public Mono<Void> execute(MessageCreateEvent event) {
@@ -15,12 +19,12 @@ public class HelpCommand implements Command {
                 .addObject(new CreateGroupCommand())
                 .build().getUsageFormatter().usage(sb);
 
-        return event.getMessage()
-                .getChannel()
-                .flatMap(channel -> channel.createMessage(sb.toString())
-                        .then(event.getMessage().addReaction(ReactionEmoji.unicode(SECRETS.EMOTE_SUCCESS)))
-                        .onErrorResume(error -> event.getMessage().addReaction(ReactionEmoji.unicode(SECRETS.EMOTE_ERROR)))
-                );
+        return Mono.just(event)
+                .flatMap(evt -> evt.getMessage().getChannel())
+                .flatMap(messageChannel -> messageChannel.createMessage(sb.toString()))
+                .doOnSuccess(message -> this.confirm(event))
+                .doOnError(message -> this.fail(event))
+                .then();
 
     }
 }

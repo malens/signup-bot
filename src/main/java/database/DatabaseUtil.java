@@ -193,7 +193,6 @@ public class DatabaseUtil {
         return sql;
     }
 
-
     public static Map<String, SignUp> getSignUps(){
         String sql = "SELECT exclusive, discordId, r.role_id, s.signup_id, s.message, r.amount, r.emojiName, r.name, pr.player_id, pr.role_id, r.emojiId\n" +
                 "FROM signups s\n" +
@@ -292,9 +291,10 @@ public class DatabaseUtil {
     }
 
     public static Map<String, ServerConfig> getServers(){
-        String sql = "SELECT channel_id, server_id\n" +
+        String sql = "SELECT channel_id, server_channel.server_id, user_id\n" +
                 "FROM server_channel\n" +
-                "LEFT OUTER JOIN server_configs sc on server_channel.server_id = sc.discordId";
+                "LEFT OUTER JOIN server_configs sc on server_channel.server_id = sc.discordId\n" +
+                "LEFT OUTER JOIN server_admins sa on server_channel.server_id = sa.server_id";
         Map<String, ServerConfig> servers = new LinkedHashMap<>();
         try (
                 Connection conn = DriverManager.getConnection(url);
@@ -304,15 +304,55 @@ public class DatabaseUtil {
             while (rs.next()){
                 String serverId = rs.getString("server_id");
                 String channelId = rs.getString("channel_id");
+                String userId = rs.getString("user_id");
                 if (!servers.containsKey(serverId)){
                     servers.put(serverId, new ServerConfig(serverId));
                 }
-                servers.get(serverId).allowedChannelNames.add(channelId);
+                if (channelId != null){
+                    servers.get(serverId).allowedChannelIds.add(channelId);
+                }
+                if (userId != null){
+                    servers.get(serverId).admins.add(userId);
+                }
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
         return servers;
+    }
+
+    public static void storePermittedChannel(String channelId, String guildId){
+        if (channelId == null || guildId == null){
+            return;
+        }
+        String sql = "INSERT INTO server_channel (channel_id, server_id) VALUES (?,?)";
+        try (
+                Connection conn = DriverManager.getConnection(url);
+                PreparedStatement statement = conn.prepareStatement(sql)
+        ) {
+            statement.setString(1, channelId);
+            statement.setString(2, guildId);
+            statement.execute();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    }
+
+    public static void removePermittedChannel(String channelId, String guildId){
+        if (channelId == null || guildId == null){
+            return;
+        }
+        String sql = "DELETE FROM server_channel WHERE channel_id = (?) AND server_id = (?)";
+        try (
+                Connection conn = DriverManager.getConnection(url);
+                PreparedStatement statement = conn.prepareStatement(sql)
+        ) {
+            statement.setString(1, channelId);
+            statement.setString(2, guildId);
+            statement.execute();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
     }
 
 

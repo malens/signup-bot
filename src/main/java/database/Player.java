@@ -23,4 +23,8 @@ public class Player {
     public int hashCode() {
         return Objects.hash(discordName);
     }
+
+    public String getAsMention(){
+        return "<@" + this.discordName + "> " + this.gw2Name;
+    }
 }
