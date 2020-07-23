@@ -18,11 +18,16 @@ public class BaseCommand implements Command{
     protected Logger logger = LoggerFactory.getLogger("command " + this.getClass().getName());
 
     @Override
+    public Command newInstance() {
+        return new BaseCommand();
+    }
+
+    @Override
     public Mono<Void> execute(MessageCreateEvent event) {
         return null;
     }
 
-    protected void parseArguments(Object source, MessageCreateEvent event) throws Exception {
+    protected void parseArguments(Object source, MessageCreateEvent event) throws Exception{
         try {
             String messageContent = event.getMessage().getContent().split(" ", 2)[1];
             Pattern p = Pattern.compile("(\"[^\"]*\")|[^ ]+");

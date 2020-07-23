@@ -1,6 +1,9 @@
 package database;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.GuildEmoji;
+import discord4j.core.object.reaction.ReactionEmoji;
+import main.StateStorage;
 
 import javax.xml.crypto.Data;
 import java.util.HashMap;
@@ -42,12 +45,26 @@ public class RaidRole {
         return this;
     }
 
-    public void removePlayer(String id){
+    public RaidRole addPlayer(String playerId){
+        if (StateStorage.hasPlayer(playerId)){
+            this.addPlayer(StateStorage.getPlayer(playerId));
+        } else {
+            this.addPlayer(new Player(playerId, ""));
+        }
+        return this;
+    }
+
+    public RaidRole removePlayer(String id){
         DatabaseUtil.deleteSignup(this.signups.get(id), this);
         this.signups.remove(id);
+        return this;
     }
 
     public Boolean hasPlayer(String id){
         return this.signups.containsKey(id);
+    }
+
+    public Boolean equalsEmoji(ReactionEmoji emoji){
+        return ReactionEmoji.custom(Snowflake.of(this.emojiId), this.emojiName, false).equals(emoji);
     }
 }

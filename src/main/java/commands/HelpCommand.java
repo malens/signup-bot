@@ -2,11 +2,15 @@ package commands;
 
 import com.beust.jcommander.JCommander;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.reaction.ReactionEmoji;
 import reactor.core.publisher.Mono;
-import secret.SECRETS;
+
 
 public class HelpCommand extends BaseCommand implements Command {
+
+    @Override
+    public Command newInstance() {
+        return new HelpCommand();
+    }
 
     @Override
     public Mono<Void> execute(MessageCreateEvent event) {

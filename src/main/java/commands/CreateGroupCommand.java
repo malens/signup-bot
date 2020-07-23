@@ -13,12 +13,14 @@ import main.Bot;
 import main.StateStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import secret.SECRETS;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class CreateGroupCommand extends BaseCommand implements Command {
     @Parameter(names = "-role", converter = RoleConverter.class, description = "List of roles to use in signup - format is \"role name_number\" or rolename_number")
@@ -30,9 +32,9 @@ public class CreateGroupCommand extends BaseCommand implements Command {
 
     private SignUp signUp;
 
-    private Map<Snowflake, List<GuildEmoji>> emojis;
-
-    private Snowflake guildId;
+    public Command newInstance(){
+        return new CreateGroupCommand();
+    }
 
     @Override
     public Mono<Void> execute(MessageCreateEvent event) {
@@ -56,23 +58,17 @@ public class CreateGroupCommand extends BaseCommand implements Command {
 
         return event.getMessage()
                 .getChannel()
-                .flatMap(channel ->
-                        channel.createEmbed(this.signUp::getAsEmbed)
-                                .doOnSuccess(
-                                        success -> {
-                                            this.signUp.discordMessageId = success.getId();
-                                            this.signUp.roles.values().forEach(
-                                                    role -> success
-                                                            .addReaction(ReactionEmoji.custom(Snowflake.of(role.emojiId), role.emojiName, false))
-                                                            .then());
-                                        }
-                                ))
-                .then(event.getMessage().addReaction(ReactionEmoji.unicode(SECRETS.EMOTE_SUCCESS)))
+                .flatMap(channel -> channel.createEmbed(this.signUp::getAsEmbed))
+                .flatMapMany(message -> {
+                            this.signUp.discordMessageId = message.getId();
+                            return Flux.fromIterable(this.signUp.roles.values())
+                                    .flatMap(role -> message.addReaction(ReactionEmoji.custom(Snowflake.of(role.emojiId), role.emojiName, false)));
+                        }
+                )
+                .then(this.confirm(event))
                 .doOnSuccess(success -> StateStorage.storeSignUp(this.signUp))
                 .onErrorResume(error -> event.getMessage().addReaction(ReactionEmoji.unicode(SECRETS.EMOTE_ERROR)))
                 .then();
-
-
     }
 
 

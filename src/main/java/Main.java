@@ -1,5 +1,6 @@
 import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.JCommander;
+import commands.AddChannelCommand;
 import commands.CreateGroupCommand;
 import commands.HelpCommand;
 import database.DatabaseUtil;
@@ -11,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.plaf.nimbus.State;
 import java.io.*;
-
+import java.util.LinkedHashMap;
 
 
 public class Main {
@@ -49,6 +50,10 @@ public class Main {
                 .withCommand(
                         new CreateGroupCommand(),
                         "group"
+                )
+                .withCommand(
+                        new AddChannelCommand(),
+                        "permit"
                 )
                 .subscribe()
                 .build();
