@@ -131,7 +131,7 @@ public class Bot {
                                 .filter(raidRole -> raidRole.equalsEmoji(event.getEmoji()))
                                 .map(raidRole -> raidRole.addPlayer(event.getUserId().asString()))
                 )
-                .then(reactionAddEvent.getMessage().flatMap(message -> message.edit(spec -> spec.setEmbed(signUp::getAsEmbed))))
+                .then(reactionAddEvent.getMessage().flatMap(message -> message.edit(spec -> spec.setContent("").setEmbed(signUp::getAsEmbed))))
                 .then();
     }
 
@@ -144,7 +144,7 @@ public class Bot {
                 )
                 .then(reactionRemoveEvent
                         .getMessage()
-                        .flatMap(msg -> msg.edit(messageEditSpec -> messageEditSpec.setEmbed(signUp::getAsEmbed))))
+                        .flatMap(msg -> msg.edit(messageEditSpec -> messageEditSpec.setContent("").setEmbed(signUp::getAsEmbed))))
                 .then();
     }
 
