@@ -96,7 +96,7 @@ public class DatabaseUtil {
     public static void storeSignup(SignUp signUp){
         Logger logger = LoggerFactory.getLogger("signup db");
         Map<String, Integer> insertedRolesIds = new LinkedHashMap<>();
-        String sql = "INSERT INTO signups(signup_id, message, exclusive) VALUES(?,?, ?)";
+        String sql = "INSERT INTO signups(signup_id, message, exclusive, is_text) VALUES(?, ?, ?, ?)";
         try (
                 Connection conn = DriverManager.getConnection(url);
                 PreparedStatement statement = conn.prepareStatement(sql)
@@ -104,6 +104,7 @@ public class DatabaseUtil {
             statement.setString(1, signUp.discordMessageId.asString());
             statement.setString(2, signUp.message);
             statement.setInt(3, signUp.isExclusive() ? 1 : 0);
+            statement.setInt(3, signUp.isText() ? 1 : 0);
             statement.executeUpdate();
         } catch (SQLException throwables) {
             throwables.printStackTrace();
@@ -194,7 +195,7 @@ public class DatabaseUtil {
     }
 
     public static Map<String, SignUp> getSignUps(){
-        String sql = "SELECT exclusive, discordId, r.role_id, s.signup_id, s.message, r.amount, r.emojiName, r.name, pr.player_id, pr.role_id, r.emojiId\n" +
+        String sql = "SELECT is_text, exclusive, discordId, r.role_id, s.signup_id, s.message, r.amount, r.emojiName, r.name, pr.player_id, pr.role_id, r.emojiId\n" +
                 "FROM signups s\n" +
                 "    INNER JOIN roles r on s.signup_id = r.signup_id\n" +
                 "    LEFT OUTER JOIN player_roles pr on r.role_id = pr.role_id\n" +
@@ -213,6 +214,7 @@ public class DatabaseUtil {
                 String signUpId = rs.getString("signup_id");
                 if (!signUps.containsKey(signUpId)){
                     signUp = new SignUp(Snowflake.of(signUpId), rs.getString("message"), rs.getBoolean("exclusive"));
+                    signUp.setGetAsText(rs.getBoolean("is_text"));
                     signUps.put(signUp.discordMessageId.asString(), signUp);
                 }
                 signUp = signUps.get(signUpId);
