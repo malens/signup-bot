@@ -77,7 +77,7 @@ public class SignUp {
                     .map(Player::getAsMention).collect(Collectors.joining("\n"));
             String backups = role.signups.values().stream().skip(role.amount)
                     .map(Player::getAsMention).collect(Collectors.joining("\n"));
-            spec.addField(role.name + " - " + role.getEmote() + " (" + role.signups.size() + "/" + role.amount + ")",regular.isEmpty() && backups.isEmpty() ? "This place is waiting for you!" : regular + "\nBackups:\n" + backups , false);
+            spec.addField(role.getEmote() + ' ' + role.name + " (" + role.signups.size() + "/" + role.amount + ")",regular.isEmpty() && backups.isEmpty() ? "This place is waiting for you!" : regular + "\nBackups:\n" + backups , false);
 
         });
         spec.setTimestamp(Instant.now());
