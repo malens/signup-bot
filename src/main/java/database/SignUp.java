@@ -52,6 +52,16 @@ public class SignUp {
         }
     }
 
+    public Mono<Message> editMessage(Message message){
+        return message.edit(messageEditSpec -> {
+            if (this.getAsText){
+                messageEditSpec.setContent(this.getAsMessage());
+            } else {
+                messageEditSpec.setContent("").setEmbed(this::getAsEmbed);
+            }
+        });
+    }
+
     public String getAsMessage() {
         StringBuilder toReturn = new StringBuilder();
         toReturn.append(this.message).append("\n");
