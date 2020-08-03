@@ -18,6 +18,12 @@ public class HelpCommand extends BaseCommand implements Command {
         JCommander.newBuilder().programName("!group")
                 .addObject(new CreateGroupCommand())
                 .build().getUsageFormatter().usage(sb);
+        JCommander.newBuilder().programName("!role")
+                .addObject(new RoleAssignCommand())
+                .build().getUsageFormatter().usage(sb);
+        JCommander.newBuilder().programName("!permit")
+                .addObject(new AddChannelCommand())
+                .build().getUsageFormatter().usage(sb);
 
         return Mono.just(event)
                 .flatMap(evt -> evt.getMessage().getChannel())

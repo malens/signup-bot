@@ -16,12 +16,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class RaidRole {
+public class RaidRole extends ReactionEvent {
     public String name;
     public Integer amount;
     Map<String, Player> signups;
-    public String emojiName;
-    public String emojiId;
+
     public Integer dbId;
 
     private final Logger logger = LoggerFactory.getLogger("Raid Role");
@@ -36,12 +35,6 @@ public class RaidRole {
         this(s.split("_")[0], Integer.valueOf(s.split("_")[1]));
     }
 
-
-    public RaidRole setEmote(GuildEmoji emoji) {
-        this.emojiId = emoji.getId().asString();
-        this.emojiName = emoji.getName();
-        return this;
-    }
 
     public Flux<RaidRole> addMissingUsers(List<User> users) {
         return Flux.fromStream(users.stream()
@@ -59,13 +52,7 @@ public class RaidRole {
         return this.signups.size();
     }
 
-    public ReactionEmoji getEmoji() {
-        return ReactionEmoji.custom(Snowflake.of(this.emojiId), this.emojiName, false);
-    }
 
-    public String getEmote() {
-        return "<:" + emojiName + ":" + emojiId + ">";
-    }
 
     public RaidRole addPlayer(Player player) {
         if (!this.signups.containsKey(player.discordName)) {
@@ -110,7 +97,5 @@ public class RaidRole {
         return this.signups.containsKey(id);
     }
 
-    public Boolean equalsEmoji(ReactionEmoji emoji) {
-        return ReactionEmoji.custom(Snowflake.of(this.emojiId), this.emojiName, false).equals(emoji);
-    }
+
 }

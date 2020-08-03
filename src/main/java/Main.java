@@ -3,6 +3,7 @@ import com.beust.jcommander.JCommander;
 import commands.AddChannelCommand;
 import commands.CreateGroupCommand;
 import commands.HelpCommand;
+import commands.RoleAssignCommand;
 import database.DatabaseUtil;
 import main.Args;
 import main.Bot;
@@ -41,6 +42,7 @@ public class Main {
         StateStorage.playerMap = DatabaseUtil.getPlayers();
         StateStorage.signUpMap = DatabaseUtil.getSignUps();
         StateStorage.serverMap = DatabaseUtil.getServers();
+        StateStorage.assignmentMap = DatabaseUtil.getAssignments();
 
         Bot bot = new Bot(Main.apikey)
                 .withCommand(
@@ -54,6 +56,10 @@ public class Main {
                 .withCommand(
                         new AddChannelCommand(),
                         "permit"
+                )
+                .withCommand(
+                        new RoleAssignCommand(),
+                        "role"
                 )
                 .subscribe()
                 .build();

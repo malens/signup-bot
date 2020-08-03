@@ -1,6 +1,7 @@
 package database;
 
 import discord4j.common.util.Snowflake;
+import discord4j.core.event.domain.lifecycle.ConnectEvent;
 import main.StateStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -355,6 +356,74 @@ public class DatabaseUtil {
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
+    }
+
+    public static void storeAssignment(RoleAssignment assignment){
+        if (assignment.getMessageId() == null){
+            return;
+        }
+        String sql = "INSERT INTO role_assignments (message_id, message_text) VALUES (?,?)";
+        try (
+                Connection conn = DriverManager.getConnection(url);
+                PreparedStatement statement = conn.prepareStatement(sql)
+        ) {
+            statement.setString(1, assignment.getMessageId());
+            statement.setString(2, assignment.getMessageText());
+            statement.executeUpdate();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        sql = "INSERT INTO server_roles (server_role_id, role_assignment, emojiId, emojiName) VALUES (?,?,?,?)";
+        try (
+                Connection conn = DriverManager.getConnection(url);
+                PreparedStatement statement = conn.prepareStatement(sql)
+        ) {
+            assignment.getRoleIds().forEach(roleId -> {
+                try {
+                    statement.setString(1, roleId.getRoleId());
+                    statement.setString(2, assignment.getMessageId());
+                    statement.setString(3, roleId.emojiId);
+                    statement.setString(4, roleId.emojiName);
+                    statement.addBatch();
+                } catch (SQLException throwables) {
+                    throwables.printStackTrace();
+                }
+            });
+            statement.executeBatch();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    }
+
+    public static Map<String, RoleAssignment> getAssignments(){
+        String sql = "SELECT server_role_id, role_assignment, emojiId, emojiName, message_id, message_text\n" +
+                "FROM server_roles\n" +
+                "LEFT OUTER JOIN role_assignments on server_roles.role_assignment = message_id";
+        Map<String, RoleAssignment> roleAssignment = new LinkedHashMap<>();
+        try (
+            Connection conn = DriverManager.getConnection(url);
+            PreparedStatement statement = conn.prepareStatement(sql)
+        ) {
+            ResultSet rs = statement.executeQuery();
+            while(rs.next()){
+                String messageId = rs.getString("message_id");
+                String emojiName = rs.getString("emojiName");
+                String emojiId = rs.getString("emojiId");
+                String serverRole = rs.getString("server_role_id");
+                String message = rs.getString("message_text");
+                if (!roleAssignment.containsKey(messageId)){
+                    roleAssignment.put(messageId, new RoleAssignment(messageId, message));
+                }
+                roleAssignment.get(messageId).addRoleId(new RoleAssignmentInstance(
+                        serverRole,
+                        emojiName,
+                        emojiId
+                ));
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return roleAssignment;
     }
 
 

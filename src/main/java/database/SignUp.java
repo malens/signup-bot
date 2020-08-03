@@ -1,5 +1,6 @@
 package database;
 
+import commands.MessageCreateCommand;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.Embed;
 import discord4j.core.object.entity.Message;
@@ -19,47 +20,23 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class SignUp {
+public class SignUp extends MessageCreateCommand {
     public Map<String, RaidRole> roles;
     public Snowflake discordMessageId;
     public String message;
     private final Logger logger = LoggerFactory.getLogger("signup");
     private Boolean exclusive;
-    private Boolean getAsText = false;
+
 
     public SignUp(Snowflake discordMessageId, String message) {
         this.discordMessageId = discordMessageId;
         this.roles = new LinkedHashMap<>();
         this.message = message;
     }
+
     public SignUp(Snowflake discordMessageId, String message, Boolean exclusive) {
         this(discordMessageId, message);
         this.exclusive = exclusive;
-    }
-
-    public static <T> Collector<T, ?, Stream<T>> reverse() {
-        return Collectors.collectingAndThen(Collectors.toList(), list -> {
-            Collections.reverse(list);
-            return list.stream();
-        });
-    }
-
-    public Mono<Message> createSignup(MessageChannel channel){
-        if (getAsText){
-            return channel.createMessage(this.getAsMessage());
-        } else {
-            return channel.createEmbed(this::getAsEmbed);
-        }
-    }
-
-    public Mono<Message> editMessage(Message message){
-        return message.edit(messageEditSpec -> {
-            if (this.getAsText){
-                messageEditSpec.setContent(this.getAsMessage());
-            } else {
-                messageEditSpec.setContent("").setEmbed(this::getAsEmbed);
-            }
-        });
     }
 
     public String getAsMessage() {
@@ -120,11 +97,5 @@ public class SignUp {
         return this.exclusive;
     }
 
-    public void setGetAsText(Boolean getAsText){
-        this.getAsText = getAsText;
-    }
 
-    public Boolean isText(){
-        return this.getAsText;
-    }
 }

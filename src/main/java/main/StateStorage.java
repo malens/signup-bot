@@ -2,9 +2,11 @@ package main;
 
 import database.DatabaseUtil;
 import database.Player;
+import database.RoleAssignment;
 import database.SignUp;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.entity.GuildEmoji;
 import discord4j.core.object.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,14 +15,25 @@ import server.ServerConfig;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 public class StateStorage {
+    public static Map<Snowflake, Map<Snowflake, GuildEmoji>> guildEmojis;
     private static Logger logger = LoggerFactory.getLogger("StateStorage");
 
     public static Map<String, SignUp> signUpMap;
     public static Map<String, Player> playerMap;
     public static Map<String, ServerConfig> serverMap;
+    public static Map<String, RoleAssignment> assignmentMap;
+    static Map<Snowflake, Integer> counters;
+
+    public static void storeAssignment(RoleAssignment assignment){
+        logger.debug(assignment.getMessageId());
+        assignment.getRoleIds().forEach(roleAssignmentInstance -> logger.debug(roleAssignmentInstance.getRoleId()));
+        assignmentMap.put(assignment.getMessageId(), assignment);
+        DatabaseUtil.storeAssignment(assignment);
+    }
 
     public static void storeSignUp(SignUp signUp) {
         signUpMap.put(signUp.discordMessageId.asString(), signUp);
@@ -89,5 +102,14 @@ public class StateStorage {
 
     public static Player getPlayer(String playerId) {
         return playerMap.get(playerId);
+    }
+
+    public static GuildEmoji getEmoteById(Snowflake guildId, Snowflake emoteId) {
+        return guildEmojis.get(guildId).get(emoteId);
+    }
+
+    public static GuildEmoji getRandomEmote(Snowflake guildId) {
+        counters.put(guildId, (counters.get(guildId) + 1) % guildEmojis.get(guildId).size());
+        return guildEmojis.get(guildId).values().parallelStream().collect(Collectors.toList()).get(counters.get(guildId));
     }
 }
