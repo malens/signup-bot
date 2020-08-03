@@ -76,9 +76,13 @@ public class SignUp {
                     .map(Player::getAsMention).collect(Collectors.joining("\n"));
             String backups = role.signups.values().stream().skip(role.amount)
                     .map(Player::getAsMention).collect(Collectors.joining("\n"));
-            tmp.append(role.name).append(" ").append(role.signups.size()).append("/")
-                    .append(role.amount).append(role.getEmote()).append("\n").append(regular)
-                    .append("\nBackups:\n").append(backups);
+            tmp.append(role.getEmote()).append(" ").append(role.name).append(" ")
+                    .append(role.signups.size()).append("/").append(role.amount).append("\n")
+                    .append(regular);
+            if (role.signups.size() > role.amount){
+                tmp.append("\nBackups:\n")
+                        .append(backups);
+            }
             toReturn.append(tmp).append("\n").append(SECRETS.DIVIDER);
         }
         toReturn.append("To sign up as a role react with corresponding emote.");
