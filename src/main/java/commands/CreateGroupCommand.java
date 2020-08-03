@@ -29,6 +29,8 @@ public class CreateGroupCommand extends BaseCommand implements Command {
     private List<String> message;
     @Parameter(names = "-excl", description = "Sets the group to exclusive mode")
     private Boolean exclusive = false;
+    @Parameter(names = "-text", description = "Sets the group to exclusive mode")
+    private Boolean getAsText = false;
 
     private SignUp signUp;
 
@@ -43,6 +45,7 @@ public class CreateGroupCommand extends BaseCommand implements Command {
         try {
             this.parseArguments(this, event);
             this.signUp = new SignUp(event.getMessage().getId(), message == null ? "" : String.join(" ", message), exclusive == null ? true : exclusive);
+            this.signUp.setGetAsText(this.getAsText);
             if (this.roles.isEmpty()) {
                 this.roles.add(new RaidRole("All", 10));
             }
@@ -58,7 +61,7 @@ public class CreateGroupCommand extends BaseCommand implements Command {
 
         return event.getMessage()
                 .getChannel()
-                .flatMap(channel -> channel.createEmbed(this.signUp::getAsEmbed))
+                .flatMap(this.signUp::createSignup)
                 .flatMapMany(message -> {
                             this.signUp.discordMessageId = message.getId();
                             return Flux.fromIterable(this.signUp.roles.values())

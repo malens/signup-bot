@@ -2,11 +2,14 @@ package database;
 
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.Embed;
+import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Mono;
 import secret.SECRETS;
 
 import java.time.Instant;
@@ -22,6 +25,7 @@ public class SignUp {
     public String message;
     private final Logger logger = LoggerFactory.getLogger("signup");
     private Boolean exclusive;
+    private Boolean getAsText = false;
 
     public SignUp(Snowflake discordMessageId, String message) {
         this.discordMessageId = discordMessageId;
@@ -38,6 +42,14 @@ public class SignUp {
             Collections.reverse(list);
             return list.stream();
         });
+    }
+
+    public Mono<Message> createSignup(MessageChannel channel){
+        if (getAsText){
+            return channel.createMessage(this.getAsMessage());
+        } else {
+            return channel.createEmbed(this::getAsEmbed);
+        }
     }
 
     public String getAsMessage() {
@@ -92,5 +104,13 @@ public class SignUp {
 
     public Boolean isExclusive(){
         return this.exclusive;
+    }
+
+    public void setGetAsText(Boolean getAsText){
+        this.getAsText = getAsText;
+    }
+
+    public Boolean isText(){
+        return this.getAsText;
     }
 }
