@@ -37,6 +37,8 @@ public class Bot {
     private final GatewayDiscordClient client;
     private final Map<String, Command> commandMap = new LinkedHashMap<>();
 
+    private final Logger logger = LoggerFactory.getLogger("Bot");
+
     public Bot(String token) {
         this.client = DiscordClientBuilder.create(token)
                 .build()
@@ -127,12 +129,25 @@ public class Bot {
         return Mono.just(reactionAddEvent)
                 .filter(event -> !signUp.isExclusive() || signUp.notContains(event.getUserId().asString()))
                 .flatMapMany(event ->
-                        Flux.fromIterable(signUp.roles.values())
-                                .filter(raidRole -> raidRole.equalsEmoji(event.getEmoji()))
-                                .map(raidRole -> raidRole.addPlayer(event.getUserId().asString()))
+                        event.getMessage()
+                                .flatMap(message -> Flux.fromIterable(signUp.roles.values())
+                                        .filter(raidRole -> raidRole.equalsEmoji(event.getEmoji()))
+                                        .flatMap(raidRole -> raidRole.addPlayerMono(event.getUserId().asString()))
+                                        .filter(raidRole -> raidRole.getSignupNumber() + 1 != message.getReactions().stream().filter(reaction -> raidRole.equalsEmoji(reaction.getEmoji())).findFirst().get().getCount())
+                                        .flatMap(raidRole -> {
+                                            Mono<List<User>> reactors = message.getReactors(event.getEmoji()).collectList();
+                                            return Flux.zip(
+                                                    reactors.flatMapMany(raidRole::addMissingUsers),
+                                                    reactors.flatMapMany(raidRole::removeUnsignedUsers)
+                                            );
+                                        })
+                                        .then()
+
+                                )
                 )
-                .then(reactionAddEvent.getMessage().flatMap(message -> message.edit(spec -> spec.setContent("").setEmbed(signUp::getAsEmbed))))
+                .then(reactionAddEvent.getMessage().flatMap(signUp::editMessage))
                 .then();
+
     }
 
     private Mono<Void> signUpUnReact(SignUp signUp, ReactionRemoveEvent reactionRemoveEvent) {
@@ -144,7 +159,7 @@ public class Bot {
                 )
                 .then(reactionRemoveEvent
                         .getMessage()
-                        .flatMap(msg -> msg.edit(messageEditSpec -> messageEditSpec.setContent("").setEmbed(signUp::getAsEmbed))))
+                        .flatMap(signUp::editMessage))
                 .then();
     }
 

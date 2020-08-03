@@ -104,7 +104,7 @@ public class DatabaseUtil {
             statement.setString(1, signUp.discordMessageId.asString());
             statement.setString(2, signUp.message);
             statement.setInt(3, signUp.isExclusive() ? 1 : 0);
-            statement.setInt(3, signUp.isText() ? 1 : 0);
+            statement.setInt(4, signUp.isText() ? 1 : 0);
             statement.executeUpdate();
         } catch (SQLException throwables) {
             throwables.printStackTrace();

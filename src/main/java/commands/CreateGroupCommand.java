@@ -46,6 +46,7 @@ public class CreateGroupCommand extends BaseCommand implements Command {
             this.parseArguments(this, event);
             this.signUp = new SignUp(event.getMessage().getId(), message == null ? "" : String.join(" ", message), exclusive == null ? true : exclusive);
             this.signUp.setGetAsText(this.getAsText);
+            logger.debug(this.getAsText + " get as text");
             if (this.roles.isEmpty()) {
                 this.roles.add(new RaidRole("All", 10));
             }
