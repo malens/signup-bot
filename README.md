@@ -9,4 +9,4 @@ Todo, available from the bot with !help
 
 
 # Used in:
-For a couple of months it was used by the Delusional Elitists discord server with success, hosted on a private VPS.
+For a couple of months it was used by the Delusional Elitists (https://discord.gg/Hardstuck) discord server with success, hosted on a private VPS.
